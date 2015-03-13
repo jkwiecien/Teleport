@@ -39,7 +39,7 @@ public class TeleportClient implements DataApi.DataListener,
         GoogleApiClient.OnConnectionFailedListener {
 
 
-    private static final String TAG = "TeleportClient";
+    public static final String TAG = "TeleportClient";
 
     private GoogleApiClient mGoogleApiClient;
 
@@ -52,16 +52,18 @@ public class TeleportClient implements DataApi.DataListener,
     private OnGetMessageCallback onGetMessageCallback;
 
     private Handler mHandler;
+    private OnGoogleApiClientConnectionListener mConnectionListener;
 
     public TeleportClient(Context context) {
-
         mGoogleApiClient = new GoogleApiClient.Builder(context)
                 .addApi(Wearable.API)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
+    }
 
-
+    public void addConnectionListener(OnGoogleApiClientConnectionListener mConnectionListener) {
+        this.mConnectionListener = mConnectionListener;
     }
 
     public void connect() {
@@ -74,6 +76,7 @@ public class TeleportClient implements DataApi.DataListener,
         Wearable.DataApi.addListener(mGoogleApiClient, this);
         Wearable.MessageApi.addListener(mGoogleApiClient, this);
         Wearable.NodeApi.addListener(mGoogleApiClient, this);
+        if (mConnectionListener != null) mConnectionListener.onConnected();
     }
 
     public void disconnect() {
@@ -176,10 +179,11 @@ public class TeleportClient implements DataApi.DataListener,
     //General method to sync data in the Data Layer
     public void syncDataItem(PutDataMapRequest putDataMapRequest) {
 
-        PutDataRequest request = putDataMapRequest.asPutDataRequest();
+        final PutDataRequest request = putDataMapRequest.asPutDataRequest();
 
         Log.d(TAG, "Generating DataItem: " + request);
         if (!mGoogleApiClient.isConnected()) {
+            Log.e(TAG, "GoogleApiClient is not connected. Finishing.");
             return;
         }
 
@@ -189,10 +193,10 @@ public class TeleportClient implements DataApi.DataListener,
                     @Override
                     public void onResult(DataApi.DataItemResult dataItemResult) {
                         if (!dataItemResult.getStatus().isSuccess()) {
-                            Log.e(TAG, "ERROR: failed to putDataItem, status code: "
-                                    + dataItemResult.getStatus().getStatusCode());
+                            Log.e(TAG, "ERROR: failed to putDataItem, status code: " + dataItemResult.getStatus().getStatusCode());
+                        } else {
+                            Log.d(TAG, "Request synced successfully: " + request.toString());
                         }
-
                     }
                 });
     }
@@ -321,13 +325,13 @@ public class TeleportClient implements DataApi.DataListener,
 
         boolean flagHandled = false;
 
-        if(onGetMessageTaskBuilder != null) {
+        if (onGetMessageTaskBuilder != null) {
             String path = messageEvent.getPath();
             onGetMessageTaskBuilder.build().execute(path);
             flagHandled = true;
         }
 
-        if(!flagHandled && onGetMessageCallback != null) {
+        if (!flagHandled && onGetMessageCallback != null) {
             String messagePath = messageEvent.getPath();
             onGetMessageCallback.onCallback(messagePath);
             flagHandled = true;
@@ -404,7 +408,7 @@ public class TeleportClient implements DataApi.DataListener,
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-
+        if (mConnectionListener != null) mConnectionListener.onConnectionFailed();
     }
 
 

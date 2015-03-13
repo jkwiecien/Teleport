@@ -31,13 +31,11 @@ import java.util.List;
 /**
  * Created by Mario Viviani on 10/07/2014.
  */
-public abstract class TeleportService extends WearableListenerService{
+public abstract class TeleportService extends WearableListenerService {
 
     private GoogleApiClient mGoogleApiClient;
-    private static final String TAG = "TeleportService";
+    public static final String TAG = "TeleportService";
 
-
-    //    private AsyncTask<?,?,?> asyncTask;
     private OnSyncDataItemTask onSyncDataItemTask;
     private OnSyncDataItemTask.Builder onSyncDataItemTaskBuilder;
     private OnSyncDataItemCallback onSyncDataItemCallback;
@@ -57,18 +55,15 @@ public abstract class TeleportService extends WearableListenerService{
     }
 
 
-
     //--------------SYNC DATAITEM ------------------//
 
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
-
+        Log.d(TAG, "DataItem onDataChanged");
         final List<DataEvent> events = FreezableUtils.freezeIterable(dataEvents);
 
         for (DataEvent event : events) {
             if (event.getType() == DataEvent.TYPE_CHANGED) {
-
-
 
                 DataMapItem dataMapItem = DataMapItem.fromDataItem(event.getDataItem());
                 DataMap dataMap = dataMapItem.getDataMap();
@@ -145,14 +140,13 @@ public abstract class TeleportService extends WearableListenerService{
 
     //General method to sync data in the Data Layer
     public void syncDataItem(PutDataMapRequest putDataMapRequest) {
-
-        PutDataRequest request = putDataMapRequest.asPutDataRequest();
-
-        Log.d(TAG, "Generating DataItem: " + request);
         if (!mGoogleApiClient.isConnected()) {
+            Log.e(TAG, "GoogleApiClient is not connected. Finishing.");
             return;
         }
 
+        PutDataRequest request = putDataMapRequest.asPutDataRequest();
+        Log.d(TAG, "Generating DataItem: " + request);
         //let's send the dataItem to the DataLayer API
         Wearable.DataApi.putDataItem(mGoogleApiClient, request)
                 .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
@@ -169,7 +163,6 @@ public abstract class TeleportService extends WearableListenerService{
 
     /**
      * Get the TeleportTask that will be executed when a DataItem is synced
-     *
      */
     public OnSyncDataItemTask getOnSyncDataItemTask() {
         return onSyncDataItemTask;
@@ -184,8 +177,6 @@ public abstract class TeleportService extends WearableListenerService{
     public void setOnSyncDataItemTask(OnSyncDataItemTask onSyncDataItemTask) {
         this.onSyncDataItemTask = onSyncDataItemTask;
     }
-
-
 
 
     public abstract static class OnSyncDataItemTask extends AsyncTask<DataMap, Void, DataMap> {
@@ -292,13 +283,13 @@ public abstract class TeleportService extends WearableListenerService{
 
         boolean flagHandled = false;
 
-        if(onGetMessageTaskBuilder != null) {
+        if (onGetMessageTaskBuilder != null) {
             String path = messageEvent.getPath();
             onGetMessageTaskBuilder.build().execute(path);
             flagHandled = true;
         }
 
-        if(!flagHandled && onGetMessageCallback != null) {
+        if (!flagHandled && onGetMessageCallback != null) {
             String messagePath = messageEvent.getPath();
             onGetMessageCallback.onCallback(messagePath);
             flagHandled = true;
@@ -314,8 +305,7 @@ public abstract class TeleportService extends WearableListenerService{
 
     /**
      * AsyncTask that will be executed when a Message is received You should extend this task and implement the onPostExecute() method when implementing your Service.
-     *
-     * */
+     */
     public abstract static class OnGetMessageTask extends AsyncTask<String, Void, String> {
 
         public abstract static class Builder {
@@ -362,16 +352,16 @@ public abstract class TeleportService extends WearableListenerService{
         this.onGetMessageCallback = onGetMessageCallback;
     }
 
-    /***
+    /**
      * Task to elaborate image from an Asset. You must pass the Asset and the getGoogleApiClient()
      */
-    public abstract static class ImageFromAssetTask extends AsyncTask<Object, Void,Bitmap>{
+    public abstract static class ImageFromAssetTask extends AsyncTask<Object, Void, Bitmap> {
 
         @Override
         protected Bitmap doInBackground(Object... params) {
             InputStream assetInputStream = Wearable.DataApi.getFdForAsset(
-                    (GoogleApiClient)params[1], (Asset)params[0]).await().getInputStream();
-            Bitmap bitmap=  BitmapFactory.decodeStream(assetInputStream);
+                    (GoogleApiClient) params[1], (Asset) params[0]).await().getInputStream();
+            Bitmap bitmap = BitmapFactory.decodeStream(assetInputStream);
             return bitmap;
 
         }
@@ -379,7 +369,8 @@ public abstract class TeleportService extends WearableListenerService{
         @Override
         protected abstract void onPostExecute(Bitmap bitmap);
 
-    };
+    }
+
 
 //    /**
 //     * Loads Bitmap from Asset
@@ -411,7 +402,6 @@ public abstract class TeleportService extends WearableListenerService{
     public void setGoogleApiClient(GoogleApiClient mGoogleApiClient) {
         this.mGoogleApiClient = mGoogleApiClient;
     }
-
 
 
 }
